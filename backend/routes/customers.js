@@ -4,22 +4,27 @@ const router = express.Router();
 const customerController = require('../controllers/customerController');
 const { verifyToken, isAdmin } = require('../middleware/authMiddleware');
 
-// All these routes are protected and require a valid token
+// All customer routes require a valid token
 router.use(verifyToken);
 
-// GET /api/customers - Get all customers (Admin only)
-router.get('/', isAdmin, customerController.getAllCustomers);
+// --- NEW REPORT ROUTE ---
+// This MUST be placed BEFORE the '/:id' route
+// This is admin-only, which is correct
+router.get('/:id/report', isAdmin, customerController.getCustomerReport);
 
-// POST /api/customers - Create a new customer (Admin only)
-router.post('/', isAdmin, customerController.createCustomer);
 
-// GET /api/customers/:id - Get a single customer by ID (Admin only)
-router.get('/:id', isAdmin, customerController.getCustomerById);
+// --- EXISTING ROUTES ---
 
-// PUT /api/customers/:id - Update a customer (Admin only)
+// Admin and Employees can get all customers and create a new one
+router.get('/', customerController.getAllCustomers);
+router.post('/', customerController.createCustomer);
+
+// Admin and Employees can get a single customer by ID
+// This must be AFTER the '/:id/report' route
+router.get('/:id', customerController.getCustomerById);
+
+// ONLY Admin can update or delete
 router.put('/:id', isAdmin, customerController.updateCustomer);
-
-// DELETE /api/customers/:id - Delete a customer (Admin only)
 router.delete('/:id', isAdmin, customerController.deleteCustomer);
 
 module.exports = router;

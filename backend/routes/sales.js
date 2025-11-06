@@ -4,16 +4,25 @@ const router = express.Router();
 const saleController = require('../controllers/saleController');
 const { verifyToken, isAdmin } = require('../middleware/authMiddleware');
 
-// All these routes are protected and require a valid token
 router.use(verifyToken);
 
-// GET /api/sales - Get all sales (Admin only)
-router.get('/', isAdmin, saleController.getAllSales);
+// --- REPORTING ROUTE ---
+// Must be before /:id
+router.get('/reports/full', isAdmin, saleController.getFullReport);
 
-// POST /api/sales - Create a new sale (Admin and Employee)
+// --- STATUS UPDATE ROUTE ---
+// This was missing. Must be before /:id
+router.put('/:id/status', isAdmin, saleController.updateSaleStatus);
+
+// --- EXISTING ROUTES ---
+
+// POST /api/sales - Create a new sale
 router.post('/', saleController.createSale);
 
-// GET /api/sales/:id - Get a single sale by ID (Admin only)
+// GET /api/sales - Get all sales
+router.get('/', isAdmin, saleController.getAllSales);
+
+// GET /api/sales/:id - Get a single sale
 router.get('/:id', isAdmin, saleController.getSaleById);
 
 module.exports = router;

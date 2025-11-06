@@ -1,6 +1,16 @@
+// frontend/js/ui.js
+
 export const UI = {
+    formatCurrency(amount) {
+        const number = parseFloat(amount) || 0;
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+        }).format(number);
+    },
+
     showLoading() {
-        return '<div class="flex justify-center items-center py-12"><div class="spinner"></div></div>';
+        return '<div class="flex justify-center items-center p-12"><div class="spinner"></div></div>';
     },
 
     showToast(message, type = 'info') {
@@ -11,201 +21,90 @@ export const UI = {
             warning: 'bg-yellow-500',
             info: 'bg-blue-500'
         };
-
         const icons = {
             success: 'check-circle',
             error: 'x-circle',
             warning: 'alert-triangle',
             info: 'info'
         };
-
-        const toast = `
-            <div id="${toastId}" class="toast ${colors[type]} text-white p-4 rounded-lg shadow-lg flex items-center space-x-3 slide-in">
-                <i data-lucide="${icons[type]}" class="h-5 w-5"></i>
-                <span class="flex-1">${message}</span>
-                <button onclick="this.parentElement.remove()" class="text-white hover:text-gray-200">
-                    <i data-lucide="x" class="h-4 w-4"></i>
-                </button>
+        const toastHTML = `
+            <div id="${toastId}" class="toast ${colors[type]} flex items-center gap-3 text-white shadow-lg rounded-lg px-4 py-3">
+                <i data-lucide="${icons[type]}" class="w-5 h-5"></i>
+                <span>${message}</span>
             </div>
         `;
-
         const container = document.getElementById('toastContainer');
-        container.insertAdjacentHTML('beforeend', toast);
-        
-        // Initialize Lucide icons
-        setTimeout(() => lucide.createIcons(), 0);
-
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            const toastElement = document.getElementById(toastId);
-            if (toastElement) {
-                toastElement.classList.add('slide-out');
-                setTimeout(() => toastElement.remove(), 300);
+        if (container) {
+            container.insertAdjacentHTML('beforeend', toastHTML);
+            // Use window.lucide
+            if (typeof window.lucide !== 'undefined') {
+                window.lucide.createIcons();
             }
-        }, 5000);
+            setTimeout(() => {
+                document.getElementById(toastId)?.remove();
+            }, 4000);
+        } else {
+            console.error("Toast container not found!");
+        }
     },
 
-    createModal(title, content, size = 'md') {
+    showModal(title, content, size = 'md') {
         const sizeClasses = {
-            sm: 'max-w-md',
-            md: 'max-w-2xl',
-            lg: 'max-w-4xl',
-            xl: 'max-w-6xl'
+            sm: 'max-w-sm',
+            md: 'max-w-md',
+            lg: 'max-w-xl',
+            xl: 'max-w-3xl'
         };
-
-        return `
-            <div class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 fade-in" onclick="this.remove()">
-                <div class="bg-white rounded-lg shadow-xl ${sizeClasses[size]} w-full max-h-[90vh] overflow-hidden" onclick="event.stopPropagation()">
-                    <div class="flex items-center justify-between p-6 border-b">
-                        <h3 class="text-lg font-semibold text-gray-900">${title}</h3>
-                        <button onclick="this.closest('.modal-backdrop').remove()" class="text-gray-400 hover:text-gray-600">
-                            <i data-lucide="x" class="h-6 w-6"></i>
-                        </button>
+        const modalHTML = `
+            <div class="modal-backdrop fixed inset-0 z-[99] bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onclick="this.remove()">
+                <div class="glass-card w-full ${sizeClasses[size]}" onclick="event.stopPropagation()">
+                    <div class="p-4 sm:p-6 border-b border-[hsl(var(--c-border))] flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">${title}</h3>
+                        <button onclick="this.closest('.modal-backdrop').remove()" class="p-1 rounded-full text-[hsl(var(--c-text-subtle))] hover:bg-[hsla(var(--c-primary),0.1)] transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
                     </div>
-                    <div class="p-6 overflow-y-auto max-h-[70vh]">
-                        ${content}
-                    </div>
+                    <div class="p-4 sm:p-6 max-h-[70vh] overflow-y-auto">${content}</div>
                 </div>
-            </div>
-        `;
+            </div>`;
+        const modalContainer = document.getElementById('modalContainer');
+        if (modalContainer) {
+            modalContainer.innerHTML = modalHTML;
+            requestAnimationFrame(() => {
+                document.querySelector('.modal-backdrop')?.classList.add('show');
+            });
+            // Use window.lucide
+            if (typeof window.lucide !== 'undefined') {
+                window.lucide.createIcons();
+            }
+        } else {
+             console.error("Modal container not found!");
+        }
     },
 
-    createTable(headers, rows, actions = []) {
-        const headerCells = headers.map(header => `<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${header}</th>`).join('');
-        const actionsHeader = actions.length > 0 ? '<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>' : '';
-
-        const tableRows = rows.map(row => {
-            const cells = row.cells.map(cell => `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${cell}</td>`).join('');
-            const actionButtons = actions.map(action => 
-                `<button onclick="${action.onclick}('${row.id}')" class="text-${action.color}-600 hover:text-${action.color}-900 mr-3">
-                    <i data-lucide="${action.icon}" class="h-4 w-4"></i>
-                </button>`
-            ).join('');
-            const actionsCell = actions.length > 0 ? `<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">${actionButtons}</td>` : '';
-
-            return `<tr class="table-row border-b border-gray-200">${cells}${actionsCell}</tr>`;
-        }).join('');
-
-        return `
-            <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>${headerCells}${actionsHeader}</tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        ${tableRows}
-                    </tbody>
-                </table>
-            </div>
-        `;
-    },
-
-    createCard(title, content, actions = []) {
-        const actionButtons = actions.map(action => 
-            `<button onclick="${action.onclick}" class="bg-${action.color}-600 text-white px-4 py-2 rounded-lg hover:bg-${action.color}-700 transition-colors">
-                <i data-lucide="${action.icon}" class="h-4 w-4 inline mr-2"></i>
-                ${action.label}
-            </button>`
-        ).join('');
-
-        return `
-            <div class="bg-white rounded-lg shadow-sm p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900">${title}</h3>
-                    <div class="space-x-2">${actionButtons}</div>
-                </div>
-                ${content}
-            </div>
-        `;
-    },
-
-    createForm(fields, submitText = 'Submit', onSubmit = '') {
+    createForm(fields, submitText, onSubmit) {
         const formFields = fields.map(field => {
+            const requiredAttr = field.required ? 'required' : '';
+            const label = `<label class="block text-sm font-medium text-[hsl(var(--c-text-subtle))] mb-1">${field.label}</label>`;
             switch (field.type) {
+                case 'divider': 
+                    return `<div class="col-span-1 sm:col-span-2 pt-4 mt-4 border-t border-[hsl(var(--c-border))]"><h4 class="text-xs font-semibold uppercase text-[hsl(var(--c-text-subtle))]">${field.label}</h4></div>`;
                 case 'select':
-                    const options = field.options.map(opt => 
-                        `<option value="${opt.value}" ${opt.selected ? 'selected' : ''}>${opt.label}</option>`
-                    ).join('');
-                    return `
-                        <div class="mb-4">
-                            <label for="${field.name}" class="block text-sm font-medium text-gray-700 mb-2">${field.label}</label>
-                            <select id="${field.name}" name="${field.name}" ${field.required ? 'required' : ''} 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                ${options}
-                            </select>
-                        </div>
-                    `;
+                    const options = field.options.map(opt => `<option value="${opt.value}" ${opt.selected ? 'selected' : ''}>${opt.label}</option>`).join('');
+                    return `<div class="form-field">${label}<select name="${field.name}" ${requiredAttr}>${options}</select></div>`;
                 case 'textarea':
-                    return `
-                        <div class="mb-4">
-                            <label for="${field.name}" class="block text-sm font-medium text-gray-700 mb-2">${field.label}</label>
-                            <textarea id="${field.name}" name="${field.name}" rows="3" ${field.required ? 'required' : ''}
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="${field.placeholder || ''}">${field.value || ''}</textarea>
-                        </div>
-                    `;
+                    return `<div class="form-field sm:col-span-2">${label}<textarea name="${field.name}" ${requiredAttr} rows="3">${field.value || ''}</textarea></div>`;
                 default:
-                    return `
-                        <div class="mb-4">
-                            <label for="${field.name}" class="block text-sm font-medium text-gray-700 mb-2">${field.label}</label>
-                            <input type="${field.type}" id="${field.name}" name="${field.name}" 
-                                value="${field.value || ''}" ${field.required ? 'required' : ''}
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="${field.placeholder || ''}">
-                        </div>
-                    `;
+                    return `<div class="form-field">${label}<input type="${field.type}" name="${field.name}" value="${field.value || ''}" ${requiredAttr} step="${field.step || ''}"></div>`;
             }
         }).join('');
-
         return `
-            <form onsubmit="${onSubmit}">
-                ${formFields}
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="this.closest('.modal-backdrop').remove()" 
-                        class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
-                        Cancel
-                    </button>
-                    <button type="submit" 
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        ${submitText}
-                    </button>
+            <form class="space-y-0" onsubmit="${onSubmit}"> 
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4"> 
+                    ${formFields}
                 </div>
-            </form>
-        `;
-    },
-
-    createStatsGrid(stats) {
-        return stats.map(stat => `
-            <div class="bg-white rounded-lg shadow-sm p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-8 h-8 bg-${stat.color}-100 rounded-md flex items-center justify-center">
-                            <i data-lucide="${stat.icon}" class="h-5 w-5 text-${stat.color}-600"></i>
-                        </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500">${stat.label}</p>
-                        <p class="text-2xl font-semibold text-gray-900">${stat.value}</p>
-                    </div>
+                <div class="flex justify-end gap-3 pt-6 mt-4 border-t border-[hsl(var(--c-border))]">
+                    <button type="button" onclick="this.closest('.modal-backdrop').remove()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">${submitText}</button>
                 </div>
-            </div>
-        `).join('');
+            </form>`;
     },
-
-    createEmptyState(title, description, action = null) {
-        const actionButton = action ? 
-            `<button onclick="${action.onclick}" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                <i data-lucide="${action.icon}" class="h-4 w-4 inline mr-2"></i>
-                ${action.label}
-            </button>` : '';
-
-        return `
-            <div class="text-center py-12">
-                <i data-lucide="inbox" class="mx-auto h-12 w-12 text-gray-400"></i>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">${title}</h3>
-                <p class="mt-1 text-sm text-gray-500">${description}</p>
-                ${actionButton}
-            </div>
-        `;
-    }
 };
